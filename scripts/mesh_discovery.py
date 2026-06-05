@@ -1,38 +1,42 @@
 import requests
-import socket
-import os
 import sys
 
-# Replace with your actual Gist ID and a fresh Token
-GIST_ID ="8b44dc1fca767767acc448045c9025b7"
-TOKEN ="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" 
+# Replace with your actual Personal Access Token (Classic)
+TOKEN = "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" 
+GIST_ID = "8b44dc1fca767767acc448045c9025b7"
 
-def register_node():
+def update_gist(node_id):
+    url = f"https://api.github.com/gists/{GIST_ID}"
+    
+    # These headers are MANDATORY for GitHub API v3
+    headers = {
+        "Authorization": f"token {TOKEN}",
+        "Accept": "application/vnd.github.v3+json",
+        "Content-Type": "application/json"
+    }
+    
+    # Data to push: updating nodes.txt
+    payload = {
+        "files": {
+            "nodes.txt": {
+                "content": f"Node {node_id} is active"
+            }
+        }
+    }
+    
     try:
-        hostname = socket.gethostname()
-        ip = socket.gethostbyname(hostname)
-        headers = {
-    "Authorization": f"token {TOKEN}",
-    "Accept": "application/vnd.github.v3+json"
-}
-        # Fetch current nodes
-        res = requests.get(f"https://api.github.com/gists/{GIST_ID}", headers=headers)
-        res.raise_for_status()
+        response = requests.patch(url, headers=headers, json=payload)
         
-        content = res.json()['files']['nodes.txt']['content']
-        
-        # Check and update if IP is new
-        if ip not in content:
-            new_content = f"{content}\n{ip}".strip()
-            data = {"files": {"nodes.txt": {"content": new_content}}}
-            requests.patch(f"https://api.github.com/gists/{GIST_ID}", headers=headers, json=data)
-            print(f"SUCCESS: Registered {ip}")
+        if response.status_code == 200:
+            print(f"SUCCESS: Node {node_id} registered.")
         else:
-            print(f"Node {ip} already registered.")
+            print(f"FAILED: Node {node_id} - Status: {response.status_code}")
+            print(f"Response: {response.text}")
             
     except Exception as e:
-        print(f"CRITICAL ERROR: {e}")
-        sys.exit(1)
+        print(f"ERROR: {str(e)}")
 
 if __name__ == "__main__":
-    register_node()
+    # We pass the node index as a command-line argument
+    node_idx = sys.argv[1] if len(sys.argv) > 1 else "Unknown"
+    update_gist(node_idx)
