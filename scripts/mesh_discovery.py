@@ -1,30 +1,36 @@
 import requests
 import socket
+import os
+import sys
 
+# Replace with your actual Gist ID and a fresh Token
 GIST_ID = "8b44dc1fca767767acc448045c9025b7"
-TOKEN = "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"
+TOKEN = "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" 
 
-def update_gist():
+def register_node():
     try:
-        ip = socket.gethostbyname(socket.gethostname())
+        hostname = socket.gethostname()
+        ip = socket.gethostbyname(hostname)
         headers = {"Authorization": f"token {TOKEN}"}
         
-        # 1. Fetch
+        # Fetch current nodes
         res = requests.get(f"https://api.github.com/gists/{GIST_ID}", headers=headers)
-        res.raise_for_status() # This will crash if the token is wrong
+        res.raise_for_status()
         
         content = res.json()['files']['nodes.txt']['content']
         
-        # 2. Update
+        # Check and update if IP is new
         if ip not in content:
             new_content = f"{content}\n{ip}".strip()
             data = {"files": {"nodes.txt": {"content": new_content}}}
             requests.patch(f"https://api.github.com/gists/{GIST_ID}", headers=headers, json=data)
             print(f"SUCCESS: Registered {ip}")
+        else:
+            print(f"Node {ip} already registered.")
             
     except Exception as e:
-        # This will print the error to your Render dashboard logs
         print(f"CRITICAL ERROR: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    update_gist()
+    register_node()
