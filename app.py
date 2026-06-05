@@ -3,7 +3,6 @@ import subprocess
 
 app = Flask(__name__)
 
-# The home page with your command input box
 @app.route('/')
 def home():
     return '''
@@ -14,18 +13,14 @@ def home():
     </form>
     '''
 
-# The engine that runs your commands
-@app.route('/run', methods=['GET', 'POST'])
+@app.route('/run', methods=['POST'])
 def run():
-    if request.method == 'POST':
-        command = request.form['cmd']
-        try:
-            # shell=True allows you to run bash commands directly
-            output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT).decode()
-            return f"<h2>Output:</h2><pre>{output}</pre><a href='/'>Go Back</a>"
-        except subprocess.CalledProcessError as e:
-            return f"<h2>Error:</h2><pre>{e.output.decode()}</pre><a href='/'>Go Back</a>"
-    return "Please use the form on the home page."
+    command = request.form.get('cmd', '')
+    try:
+        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT).decode()
+        return f"<h2>Output:</h2><pre>{output}</pre><a href='/'>Go Back</a>"
+    except subprocess.CalledProcessError as e:
+        return f"<h2>Error:</h2><pre>{e.output.decode()}</pre><a href='/'>Go Back</a>"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
