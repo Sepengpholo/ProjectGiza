@@ -11,7 +11,7 @@ def register_node():
     try:
         hostname = socket.gethostname()
         ip = socket.gethostbyname(hostname)
-        headers = {"Authorization": f"token {TOKEN}"}
+        headers = {"Authorization": f"token {TOKEN}", "Accept": "application/vnd.github.v3+json"}
         
         # Fetch current nodes
         res = requests.get(f"https://api.github.com/gists/{GIST_ID}", headers=headers)
