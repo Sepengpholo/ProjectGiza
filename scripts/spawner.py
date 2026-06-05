@@ -1,16 +1,19 @@
 import subprocess
+import sys
 
 def deploy_nodes():
     for i in range(10):
-        # We run it and capture output to print it right here
+        print(f"--- Triggering Node_{i} ---")
         cmd = ["python3", "scripts/mesh_discovery.py"]
-        result = subprocess.run(cmd, capture_output=True, text=True)
         
-        print(f"--- Node_{i} Output ---")
-        if result.stdout:
-            print(f"STDOUT: {result.stdout}")
-        if result.stderr:
-            print(f"STDERR: {result.stderr}")
+        # This will pipe the output of the node directly to your dashboard screen
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        stdout, _ = process.communicate()
+        
+        if stdout:
+            print(f"OUTPUT from Node_{i}: {stdout}")
+        else:
+            print(f"Node_{i} produced no output.")
 
 if __name__ == "__main__":
     deploy_nodes()
