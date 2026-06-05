@@ -3,7 +3,7 @@ import sys
 import json
 
 # Hard-coded Token and ID to eliminate configuration drift
-TOKEN = "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"
+TOKEN = "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"
 GIST_ID = "8b44dc1fca767767acc448045c9025b7"
 
 def register_node(node_id):
