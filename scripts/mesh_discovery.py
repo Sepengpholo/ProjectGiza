@@ -2,7 +2,7 @@ import requests, socket, time
 
 # Replace with your Gist ID and Token
 GIST_ID = 8b44dc1fca767767acc448045c9025b7
-TOKEN = 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
+TOKEN = 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
 
 def update_gist(ip):
     data = {"files": {"nodes.txt": {"content": ip}}}
