@@ -1,12 +1,18 @@
 import os
+import time
 
 for i in range(10): 
     print(f"Deploying Node_{i}...")
-    # This command tells the new node to start its discovery script in the background
-    cmd = f"python3 mesh_discovery.py &"
+    # Trigger the deployment
+    os.system(f"your_deployment_command_here &")
     
-    # If you are using SSH or an API, execute that command now:
-    os.system(f"ssh user@node_{i} '{cmd}'") 
+    # Give it a moment to boot up
+    time.sleep(5) 
     
-    # Or, if you're just simulating it for now:
-    print(f"Node_{i} initialized and running discovery.")
+    # Check if the process exists on the system
+    # This assumes they are running on the same host or via your cloud API
+    check = os.popen(f"pgrep -f 'mesh_discovery'").read()
+    if check:
+        print(f"Node_{i} is ONLINE and reporting.")
+    else:
+        print(f"Node_{i} FAILED to initialize.")
