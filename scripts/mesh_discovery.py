@@ -5,7 +5,7 @@ import sys
 
 # Replace with your actual Gist ID and a fresh Token
 GIST_ID ="8b44dc1fca767767acc448045c9025b7"
-TOKEN ="ghp_PoZnXFdSY0yZ4DnFjz2aTQHUQ78TqX0zuplj" 
+TOKEN ="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" 
 
 def register_node():
     try:
