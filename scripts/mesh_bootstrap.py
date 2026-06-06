@@ -5,28 +5,26 @@ import shutil
 def run_git(args, cwd):
     env = os.environ.copy()
     env["GIT_SSH_COMMAND"] = "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
-    result = subprocess.run(["git"] + args, cwd=cwd, env=env, capture_output=True, text=True)
-    return result
+    return subprocess.run(["git"] + args, cwd=cwd, env=env, capture_output=True, text=True)
 
 def bootstrap():
     print("--- Bootstrapping Node ---")
-    repo_dir = os.path.join(os.getcwd(), "gist_repo")
+    base_dir = os.getcwd()
+    repo_dir = os.path.join(base_dir, "gist_repo")
     
-    # 1. Nuke the folder if it's broken (doesn't have a proper .git folder)
-    if os.path.exists(repo_dir) and not os.path.exists(os.path.join(repo_dir, ".git")):
-        print("Cleaning up corrupted directory...")
+    # 1. Start fresh: Nuke everything
+    if os.path.exists(repo_dir):
         shutil.rmtree(repo_dir)
-
-    # 2. Clone fresh if missing
-    if not os.path.exists(repo_dir):
-        print("Cloning fresh...")
-        os.makedirs(repo_dir)
-        run_git(["clone", "git@gist.github.com:8b44dc1fca767767acc448045c9025b7.git", "."], repo_dir)
-
-    # 3. Force Remote (Fixes 'origin' error)
-    run_git(["remote", "set-url", "origin", "git@gist.github.com:8b44dc1fca767767acc448045c9025b7.git"], repo_dir)
     
-    # 4. Identity & Push
+    # 2. Clone into a clean state (No dot, let git create the folder)
+    print("Cloning fresh...")
+    clone_res = run_git(["clone", "git@gist.github.com:8b44dc1fca767767acc448045c9025b7.git"], base_dir)
+    
+    if clone_res.returncode != 0:
+        print(f"CLONE FAILED: {clone_res.stderr}")
+        return
+
+    # 3. Configure and Update
     run_git(["config", "user.email", "eddiepholo@gmail.com"], repo_dir)
     run_git(["config", "user.name", "Sepengpholo"], repo_dir)
     
