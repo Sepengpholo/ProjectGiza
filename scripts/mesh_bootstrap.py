@@ -1,54 +1,74 @@
 import os
 import subprocess
 import shutil
+import sys
 
-def run_git(args, cwd):
+# The target Gist
+REPO_URL = "git@gist.github.com:8b44dc1fca767767acc448045c9025b7.git"
+REPO_DIR = os.path.join(os.getcwd(), "gist_repo")
+
+def run_git_command(args, cwd):
+    """Executes a git command with enforced environment variables."""
+    # Force Git to ignore system-wide SSH issues and use our memory-only config
     env = os.environ.copy()
-    env["GIT_SSH_COMMAND"] = "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
-    # We set stdout=subprocess.PIPE so we can see if git spits out any warnings
-    return subprocess.run(["git"] + args, cwd=cwd, env=env, capture_output=True, text=True)
+    env["GIT_SSH_COMMAND"] = (
+        "ssh -o StrictHostKeyChecking=no "
+        "-o UserKnownHostsFile=/dev/null "
+        "-o BatchMode=yes"
+    )
+    
+    result = subprocess.run(
+        ["git"] + args, 
+        cwd=cwd, 
+        env=env, 
+        capture_output=True, 
+        text=True
+    )
+    return result
 
-def bootstrap():
-    print("--- Bootstrapping Node ---")
-    base_dir = os.getcwd()
-    repo_dir = os.path.join(base_dir, "gist_repo")
+def deploy_node(node_id):
+    print(f"--- Node {node_id} Deployment Started ---")
     
-    # 1. Start fresh
-    if os.path.exists(repo_dir):
-        shutil.rmtree(repo_dir)
+    # 1. Clean environment
+    if os.path.exists(REPO_DIR):
+        shutil.rmtree(REPO_DIR)
+    os.makedirs(REPO_DIR)
+
+    # 2. Initialize and Clone
+    print("Initializing repository...")
+    run_git_command(["init"], REPO_DIR)
+    run_git_command(["remote", "add", "origin", REPO_URL], REPO_DIR)
     
-    # 2. Clone and capture output
-    print("Cloning...")
-    clone_res = run_git(["clone", "git@gist.github.com:8b44dc1fca767767acc448045c9025b7.git", "gist_repo"], base_dir)
-    
-    if clone_res.returncode != 0:
-        print(f"CLONE FAILED (STDOUT): {clone_res.stdout}")
-        print(f"CLONE FAILED (STDERR): {clone_res.stderr}")
+    # 3. Pull latest (fetch)
+    print("Fetching data...")
+    fetch_res = run_git_command(["fetch", "origin"], REPO_DIR)
+    if fetch_res.returncode != 0:
+        print(f"Fetch failed: {fetch_res.stderr}")
         return
-    else:
-        print("Clone command returned 0 (Success)")
 
-    # 3. Check if origin exists
-    check_origin = run_git(["remote", "-v"], repo_dir)
-    print(f"Remote check: {check_origin.stdout}")
+    run_git_command(["checkout", "-b", "main"], REPO_DIR)
+    run_git_command(["pull", "origin", "main"], REPO_DIR)
 
-    # 4. Identity & Push
-    run_git(["config", "user.email", "eddiepholo@gmail.com"], repo_dir)
-    run_git(["config", "user.name", "Sepengpholo"], repo_dir)
+    # 4. Identity
+    run_git_command(["config", "user.email", "eddiepholo@gmail.com"], REPO_DIR)
+    run_git_command(["config", "user.name", "Sepengpholo"], REPO_DIR)
+
+    # 5. Update
+    with open(os.path.join(REPO_DIR, "nodes.txt"), "w") as f:
+        f.write(f"Node {node_id} is active")
     
-    with open(os.path.join(repo_dir, "nodes.txt"), "w") as f:
-        f.write("Node active via Bootstrap")
-        
-    run_git(["add", "nodes.txt"], repo_dir)
-    run_git(["commit", "-m", "Bootstrap update"], repo_dir)
+    # 6. Commit and Push
+    run_git_command(["add", "nodes.txt"], REPO_DIR)
+    run_git_command(["commit", "-m", f"update node {node_id}"], REPO_DIR)
     
-    print("Pushing...")
-    push_res = run_git(["push", "origin", "main"], repo_dir)
+    print("Pushing to GitHub...")
+    push_res = run_git_command(["push", "origin", "main"], REPO_DIR)
     
     if push_res.returncode == 0:
-        print("SUCCESS: Pushed to GitHub!")
+        print(f"Node {node_id} successfully deployed.")
     else:
-        print(f"FAILED (STDERR): {push_res.stderr}")
+        print(f"Push failed: {push_res.stderr}")
 
 if __name__ == "__main__":
-    bootstrap()
+    node_id = sys.argv[1] if len(sys.argv) > 1 else "0"
+    deploy_node(node_id)
