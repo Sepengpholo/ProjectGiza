@@ -3,27 +3,24 @@ import subprocess
 import json
 
 REPO_DIR = os.path.join(os.getcwd(), "gist_repo")
+SSH_KEY_PATH = "/tmp/id_ed25519"
 
 def run_git(args):
-    return subprocess.run(["git"] + args, cwd=REPO_DIR, capture_output=True, text=True)
+    ssh_cmd = f"ssh -i {SSH_KEY_PATH} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+    env = os.environ.copy()
+    env["GIT_SSH_COMMAND"] = ssh_cmd
+    return subprocess.run(["git"] + args, cwd=REPO_DIR, env=env, capture_output=True, text=True)
 
-def wake_swarm(task_payload):
-    print("--- Waking the Swarm ---")
+def wake_swarm(command):
+    print(f"--- Broadcasting Command: {command} ---")
     
-    # 1. Pull the latest state from nodes
-    run_git(["pull", "origin", "main"])
-    
-    # 2. Write the broadcast task
-    task_file = os.path.join(REPO_DIR, "tasks.json")
-    with open(task_file, "w") as f:
-        json.dump({"task": task_payload, "status": "active"}, f)
-    
-    # 3. Broadcast
+    # Update tasks.json
+    with open(os.path.join(REPO_DIR, "tasks.json"), "w") as f:
+        json.dump({"task": command, "status": "active"}, f)
+        
     run_git(["add", "tasks.json"])
-    run_git(["commit", "-m", "Broadcast: Wake command"])
+    run_git(["commit", "-m", f"Swarm Command: {command}"])
     run_git(["push", "origin", "main"])
-    
-    print("Swarm notified. Nodes will poll for this task shortly.")
 
 if __name__ == "__main__":
-    wake_swarm("INIT_MESH_SYNC")
+    wake_swarm("PING_ALL_NODES")
